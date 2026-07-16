@@ -1,0 +1,8 @@
+{
+  "name": "openvpn-codespace",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--device=/dev/net/tun"
+  ]
+}
