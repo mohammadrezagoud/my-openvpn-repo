@@ -162,12 +162,26 @@ start_openvpn() {
     info "اجرای OpenVPN (بدون systemd، مستقیم در پس‌زمینه) ..."
     pkill -f "openvpn --config ${SERVER_CONF}" 2>/dev/null || true
     sleep 1
-    openvpn --config "$SERVER_CONF" --daemon --writepid /var/run/openvpn-server.pid
+    rm -f /var/log/openvpn/openvpn.log
+
+    # نکته‌ی مهم: server.conf از مسیرهای نسبی (ca.crt, server.crt, ...) استفاده می‌کند
+    # که باید نسبت به /etc/openvpn/server حل شوند، نه نسبت به working directory
+    # فعلی اسکریپت (که ممکن است هنوز داخل پوشه‌ی easy-rsa مانده باشد).
+    # با --cd این مسیر صراحتاً مشخص می‌شود تا این مشکل هرگز پیش نیاید.
+    openvpn --config "$SERVER_CONF" \
+        --cd /etc/openvpn/server \
+        --daemon \
+        --writepid /var/run/openvpn-server.pid \
+        --log /var/log/openvpn/openvpn.log
+
     sleep 2
     if pgrep -f "openvpn --config ${SERVER_CONF}" > /dev/null; then
         ok "OpenVPN در حال اجراست (PID: $(cat /var/run/openvpn-server.pid))."
     else
-        err "OpenVPN اجرا نشد. لاگ را بررسی کن: cat /var/log/openvpn/status.log"
+        err "OpenVPN اجرا نشد. این خروجی دقیق لاگ OpenVPN است:"
+        echo "----------------------------------------------------------------"
+        cat /var/log/openvpn/openvpn.log 2>/dev/null || echo "(فایل لاگ پیدا نشد)"
+        echo "----------------------------------------------------------------"
         exit 1
     fi
 }
